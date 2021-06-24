@@ -1,0 +1,63 @@
+﻿
+@{
+    ViewData["Title"] = "CovidChart";
+}
+
+<h1>CovidChart</h1>
+
+@section Scripts{
+    <script src="~/lib/@@microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script>
+
+        $(() => {
+            let covidData = [];
+            covidData.push(["Tarih","İstanbul", "Ankara", "Sivas", "Konya", "Balıkesir"]);
+
+            let connection = new signalR.HubConnectionBuilder()
+                .withUrl("https://localhost:44388/CovidHub")
+                .build();
+
+            connection.start()
+                .then(() => {
+
+                    connection.invoke("GetCovidList");
+                })
+                .catch((err) => { console.log(err); })
+
+
+            connection.on("ReceiveCovidList", ReceiveCovidList)
+
+            function ReceiveCovidList(covidList) {
+                debugger;
+                //covidData = covidData.splice(0, 1);
+
+                covidList.forEach((x) => {
+                    covidData.push([x.covidDate, x.counts[0], x.counts[1], x.counts[2], x.counts[3], x.counts[4]])
+                })
+
+                 google.charts.load('current', {'packages':['corechart']});
+                 google.charts.setOnLoadCallback(drawChart);
+            }
+            
+
+            function drawChart() {
+                var data = google.visualization.arrayToDataTable(covidData);
+
+                var options = {
+                    title: 'Company Performance',
+                    curveType: 'function',
+                    legend: { position: 'bottom' }
+                };
+
+                var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+
+                chart.draw(data, options);
+            }
+        })
+
+    </script>
+
+
+}
+<div id="curve_chart" style="width: 1200px; height: 800px"></div>
